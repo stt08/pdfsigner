@@ -1,6 +1,7 @@
 <script>
 import { user } from '../stores/user';
-import SignService from '../services/SignService';
+import SignService from '@/services/SignService';
+import UserService from '@/services/UserService';
 
 export default {
   name: 'ProfileView',
@@ -11,6 +12,11 @@ export default {
       locked: true,
       certificateFile: null,
       certificateName: '',
+      inputs: {
+        fullName: '',
+        email: '',
+        password: '',
+      }
     };
   },
   async mounted() {
@@ -22,6 +28,8 @@ export default {
     }
 
     this.locked = !user.profile.hasPassword;
+    this.inputs.fullName = user.profile.fullName;
+    this.inputs.email = user.profile.email;
   },
   methods: {
     async addCertificate(event) {
@@ -33,7 +41,18 @@ export default {
     },
     async removeCertificate(index, name) {
       return await SignService.removeCertificate(index, name);
-    }
+    },
+    async removeProfile() {
+      return await UserService.deleteMe();
+    },
+    async update(field, data) {
+      if (this.locked) {
+        return;
+      }
+      UserService.updateMe( field, data );
+      this.user.profile.fullName = this.inputs.fullName;
+      this.user.profile.email = this.inputs.email;
+    },
   },
 }
 </script>
@@ -52,13 +71,31 @@ export default {
         <div class="mb-3">
           <span class="text-muted float-end fst-italic" v-if="locked">*cannot be changed</span>
           <label for="fullName" class="form-label">Full name</label>
-          <input type="text" class="form-control" id="fullName" :value="user.profile.fullName" disabled>
+          <div class="input-group">
+            <input type="text" class="form-control" id="fullName" v-model="inputs.fullName" :disabled="locked">
+            <button class="btn btn-outline-success" type="button" v-if="!locked" @click="update('fullName', inputs.fullName)">
+              <i class="fa fa-fw fa-save"></i>
+            </button>
+          </div>
+          <span class="text-danger fst-italic" v-if="inputs.fullName !== user.profile.fullName">
+            Click <i class="fa fa-fw fa-save text-success"></i> to save changes
+          </span>
         </div>
+
         <div class="mb-3">
           <span class="text-muted float-end fst-italic" v-if="locked">*cannot be changed</span>
-          <label for="email" class="form-label">Email</label>
-          <input type="text" class="form-control" id="email" :value="user.profile.email" disabled>
+          <label for="email" class="form-label">Email / Username</label>
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="email" v-model="inputs.email" :disabled="locked">
+            <button class="btn btn-outline-success" type="button" v-if="!locked">
+              <i class="fa fa-fw fa-save"></i>
+            </button>
+          </div>
+          <span class="text-danger fst-italic" v-if="inputs.email !== user.profile.email">
+            Click <i class="fa fa-fw fa-save text-success"></i> to save changes
+          </span>
         </div>
+
         <div class="mb-3">
           <label for="certificates" class="form-label">Certificates</label>
           <ul class="list-group">
@@ -94,7 +131,7 @@ export default {
         </p>
       </form>
 
-      <button class="btn btn-danger w-100">
+      <button class="btn btn-danger w-100" @click="removeProfile">
         Remove profile
       </button>
     </div>

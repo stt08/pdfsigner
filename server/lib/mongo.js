@@ -40,7 +40,7 @@ const sessionSchema = new Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: '5m'
+        expires: '12h'
     }
 });
 // == == == == == == == == == == == == == == == == == == == == //
@@ -99,7 +99,6 @@ const updateUser = async (id, field, data) => {
         return null;
     }
 
-    console.log("1.Change " + field + " to " + data);
     if(field === 'role') {
         user.set({ role: data });
     }
@@ -161,6 +160,19 @@ const createSession = async (userId) => {
     return new Session({ userId, key }).save();
 };
 
+const createUser = async (email, fullName, password, role) => {
+    const newUser = await new User({
+        fullName, email, role, password: bcrypt.hashSync(password, 10)
+    }).save();
+
+    const cert = await generateCertificate(newUser._id.toString());
+    newUser.certificates = [{
+        name: 'default',
+        data: cert
+    }];
+    return await newUser.save();
+}
+
 const deleteSession = async (key) => {
     await Session.deleteOne({ key });
 };
@@ -178,7 +190,7 @@ const getMe = async (key) => {
     
     hasPassword = user.password ? true : false;
     certificates = user.certificates.map(certificate => certificate.name);
-    return { fullName: user.fullName, email: user.email, role: user.role, certificates, hasPassword };
+    return { fullName: user.fullName, email: user.email, role: user.role, certificates, hasPassword, _id: user._id.toString() };
 };
 
 const getUserBySession = async (key) => {
@@ -232,16 +244,28 @@ const removeCertificate = async (userId, certificateIndex, certificateName) => {
     return await user.save();
 }
 
+const deleteUser = async (userId) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        return null;
+    }
+
+    return await user.deleteOne();
+}
+
 module.exports = {
     connect,
     getUsers,
     getUserById,
     accessUser,
+    createUser,
     createSession,
     loginWithPassword,
     deleteSession,
     getMe,
     getUserBySession,
     addCertificate,
-    updateUser
+    removeCertificate,
+    updateUser,
+    deleteUser,
 };

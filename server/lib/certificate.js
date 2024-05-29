@@ -3,10 +3,7 @@ const forge = require('node-forge');
 require('dotenv').config();
 
 function generateCertificate(password) {
-    // generate a keypair
     let keys = forge.pki.rsa.generateKeyPair(2048);
-
-    // create a certificate
     let cert = forge.pki.createCertificate();
     cert.publicKey = keys.publicKey;
     cert.serialNumber = '01';
@@ -47,7 +44,7 @@ function generateCertificate(password) {
     }, {
         name: 'subjectAltName',
         altNames: [{
-            type: 6, // URI
+            type: 6, 
             value: process.env.CERT_URI
         }]
     }]);
@@ -61,9 +58,7 @@ function generateCertificate(password) {
         { generateLocalKeyId: true, friendlyName: 'test' });
     var newPkcs12Der = forge.asn1.toDer(newPkcs12Asn1).getBytes();
 
-    // create CA store (w/own certificate in this example)
     var caStore = forge.pki.createCaStore([cert]);
-
     return loadPkcs12(newPkcs12Der, password, caStore);
 }
 
@@ -71,7 +66,6 @@ function loadPkcs12(pkcs12Der, password, caStore) {
     var pkcs12Asn1 = forge.asn1.fromDer(pkcs12Der);
     var pkcs12 = forge.pkcs12.pkcs12FromAsn1(pkcs12Asn1, false, password);
 
-    // load keypair and cert chain from safe content(s) and map to key ID
     var map = {};
     for (var sci = 0; sci < pkcs12.safeContents.length; ++sci) {
         var safeContents = pkcs12.safeContents[sci];
@@ -90,15 +84,12 @@ function loadPkcs12(pkcs12Der, password, caStore) {
                     };
                 }
             } else {
-                // no local key ID, skip bag
                 continue;
             }
 
-            // this bag has a private key
             if (safeBag.type === forge.pki.oids.pkcs8ShroudedKeyBag) {
                 map[localKeyId].privateKey = safeBag.key;
             } else if (safeBag.type === forge.pki.oids.certBag) {
-                // this bag has a certificate
                 map[localKeyId].certChain.push(safeBag.cert);
             }
         }

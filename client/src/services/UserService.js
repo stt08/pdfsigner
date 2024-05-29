@@ -48,4 +48,24 @@ export default class UserService {
         const response = await axios.post(`${endpoint}/${id}`, { data, field });
         return response.data;
     }
+
+    static async updateMe(field, data) {
+        const response = await axios.post(`${endpoint}/me`, { data, field });
+        return response.data;
+    }
+
+    static async deleteUser(id) {
+        const response = await axios.delete(`${endpoint}/${id}`);
+        return response.data;
+    }
+
+    static async createUser(email, fullName, password, role) {
+        const response = await axios.post(`${endpoint}`, { email, fullName, password, role });
+        return response.data;
+    }
+
+    static async deleteMe() {
+        const response = await axios.delete(`${endpoint}/me`);
+        return response.data;
+    }
 };

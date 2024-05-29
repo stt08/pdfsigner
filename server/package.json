@@ -2,10 +2,10 @@
   "name": "signer",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "NODE_ENV=dev nodemon app.js "
+    "start": "NODE_ENV=prod node app.js",
+    "dev": "NODE_ENV=dev nodemon app.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +24,6 @@
     "nodemailer": "^6.9.13",
     "nodemon": "^3.0.2",
     "pdf-lib": "^1.17.1",
-    "pdfkit": "^0.14.0"
+    "pdfkit": "^0.10.0"
   }
 }

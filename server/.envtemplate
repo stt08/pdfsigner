@@ -1,0 +1,32 @@
+# SERVER SETTINGS
+PORT = 3000
+HOST = 'localhost'
+CLIENT_PORT = 5173
+
+# MICROSOFT OAUTH DETAILS
+TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+CLIENT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+CLIENT_SECRET = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+# DATABASE DETAILS
+MONGO_URI = 'mongodb+srv://user:pass@website/?retryWrites=true&w=majority&appName=example'
+
+# DEFAULT ADMIN DETAILS
+ADMIN_EMAIL = 'admin'
+ADMIN_PASSWORD = 'password'
+
+# CERTIFICATE DETAILS
+CERT_PASS = '...long_password'
+CERT_COMMON_NAME = 'localhost'
+CERT_COUNTRY = 'Hungary'
+CERT_STATE = 'Budapest'
+CERT_LOCALITY = 'Budapest'
+CERT_ORGANIZATION = 'ELTE'
+CERT_ORGANIZATION_UNIT = 'Student'
+CERT_URI = 'http://localhost:3000'
+
+# EMAIL SETTINGS
+EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_PORT = 587
+EMAIL = 'email@inf.elte.hu'
+EMAIL_PASSWORD = 'example-password!'

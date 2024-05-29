@@ -38,7 +38,11 @@ export default {
       UserService.updateUser( this.$route.params.id, field, data );
       this.selectedUser.fullName = this.inputs.fullName;
       this.selectedUser.email = this.inputs.email;
-    }
+    },
+    async removeProfile() {
+      await UserService.deleteUser( this.$route.params.id );
+      this.$router.push('/admin');
+    },
   },
 }
 </script>
@@ -114,7 +118,7 @@ export default {
         <hr class="w-75 mx-auto">
       </form>
 
-      <button class="btn btn-danger w-100">
+      <button class="btn btn-danger w-100" @click="removeProfile">
         Remove profile
       </button>
     </div>

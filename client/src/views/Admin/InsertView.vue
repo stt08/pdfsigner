@@ -26,7 +26,7 @@ export default {
   },
   methods: {
     async create() {
-      UserService.createUser( this.inputs.email, this.inputs.fullName, this.inputs.password, this.inputs.role );
+      await UserService.createUser( this.inputs.email, this.inputs.fullName, this.inputs.password, this.inputs.role );
       this.$router.push('/admin');
     }
   },

@@ -1,3 +1,4 @@
+const path = require('path');
 const multer = require('multer');
 const express = require('express');
 const nodemailer = require('nodemailer');
@@ -17,7 +18,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 Mongo.connect()
 
-app.use(express.static('public'));
+// app.use(express.static('public'));
 app.use(cookieParser());
 
 const transporter = nodemailer.createTransport({
@@ -87,17 +88,64 @@ api.get('/users/:id', async (req, res) => {
     res.send(user);
 });
 
+api.delete('/users/me', async (req, res) => {
+    const info = await Mongo.getMe(req.cookies.token);
+    if (!info) {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+
+    await Mongo.deleteUser(info._id);
+});
+
+api.delete('/users/:id', async (req, res) => {
+    const info = await Mongo.getMe(req.cookies.token);
+    if (!info || info.role !== 'admin') {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+
+    await Mongo.deleteUser(req.params.id);
+});
+
+api.post('/users/me', express.json(), async (req, res) => {
+    const info = await Mongo.getMe(req.cookies.token);
+    if (!info) {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+
+    const data = req.body.data;
+    const field = req.body.field;
+    await Mongo.updateUser(info._id, field, data);
+    res.send('Updated');
+});
+
 api.post('/users/:id', express.json(), async (req, res) => {
     const info = await Mongo.getMe(req.cookies.token);
     if (!info || info.role !== 'admin') {
         res.status(401).send('Unauthorized');
         return;
     }
-    
     const id = req.params.id;
     const data = req.body.data;
     const field = req.body.field;
     await Mongo.updateUser(id, field, data);
+    res.send('Updated');
+});
+
+api.post('/users', express.json(), async (req, res) => {
+    const info = await Mongo.getMe(req.cookies.token);
+    if (!info || info.role !== 'admin') {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+
+    const email = req.body.email;
+    const fullName = req.body.fullName;
+    const password = req.body.password;
+    const role = req.body.role;
+    await Mongo.createUser(email, fullName, password, role);
 });
 
 api.get('/oauth', async (req, res) => {
@@ -198,10 +246,6 @@ api.post('/sign/certificate', upload.fields([
     const certificate = req.files['certificate'][0].buffer;
     const title = req.body.title;
 
-    console.log('title', title);
-    console.log('certificate', certificate);
-    console.log(req.body);
-
     const user = await Mongo.getUserBySession(req.cookies.token);
     if (!user) {
         res.status(401).send('Unauthorized');
@@ -245,5 +289,16 @@ app.use('/api', api);
 //         res.redirect(`http://${process.env.HOST}:${process.env.CLIENT_PORT}${req.url}`);
 //     });
 // }
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public/index.html'));
+    });
+}
+else {
+    app.get("*", (req, res) => {
+        res.redirect(`http://${process.env.HOST}:${process.env.CLIENT_PORT}${req.url}`);
+    });
+}
+
 
 app.listen(port, () => console.log(`Active on port ${port}!`));
