@@ -43,6 +43,23 @@ function handleFileSize(value) {
   width.value = value.width;
 }
 
+function handleDragOver(event) {
+  event.preventDefault();
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  currentFile.value = 0;
+  totalFiles.value = event.dataTransfer.files.length;
+  pdfFiles.value = event.dataTransfer.files;
+
+  const file = event.dataTransfer.files[currentFile.value];
+  if (file) {
+    pdfSource.value = URL.createObjectURL(file);
+    page.value = 1;
+  }
+}
+
 function changeFile(index) {
   currentFile.value = index;
   const file = pdfFiles.value[currentFile.value];
@@ -204,12 +221,25 @@ export default {
   <div>
     <div v-if="!pdf">
       <h2>Sign document</h2>
-      <p>Select a PDF file to apply signature</p>
+      <p>Select PDF file(s) to apply signature</p>
       <div class="card card-body col-md-6">
         <div>
-          <label for="file" class="form-label">Select PDF file(s)</label>
+          <label for="file" class="form-label">Select your PDF file(s):</label>
           <input type="file" @change="handleFileChange" accept=".pdf" class="form-control" multiple />
         </div>
+
+        <!-- ----or---- -->
+        <div class="d-flex justify-content-center my-4">
+          <hr class="w-100 my-3">
+          <span class="px-2">
+            (or)
+          </span>
+          <hr class="w-100 my-3">
+        </div>
+        
+        <div class="border border-primary p-5 text-center" @dragover="handleDragOver" @drop="handleDrop">
+          <p>Drag and drop your PDF file(s) here</p>
+        </div>  
       </div>
     </div>
     <div v-else>
