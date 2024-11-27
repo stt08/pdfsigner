@@ -81,9 +81,12 @@ async function signIt() {
   formSubmitted.value = false;
   const formatedStamps = [];
   stamps.value.forEach(stamp => {
+
+    const invertedY = height.value - stamp.y - stamp.height;
+
     formatedStamps.push({
       x: stamp.x / width.value,
-      y: stamp.y / height.value,
+      y: invertedY / height.value,
       width: stamp.width / width.value,
       height: stamp.height / height.value,
       page: stamp.page,
@@ -121,6 +124,60 @@ function downloadIt() {
     document.body.appendChild(link);
     link.click();
   });
+}
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+function dragStampStart(event, stamp) {
+  dragOffsetX = event.offsetX;
+  dragOffsetY = event.offsetY;
+}
+
+function dragStampOver(event) {
+  event.preventDefault();
+}
+
+function dragStampEnd(event, stamp) {
+  const container = event.target.closest('.p-0');
+  const containerRect = container.getBoundingClientRect();
+  const x = Math.max(0, Math.min(event.clientX - containerRect.left - dragOffsetX, containerRect.width - stamp.width));
+  const y = Math.max(0, Math.min(event.clientY - containerRect.top - dragOffsetY, containerRect.height - stamp.height));
+  stamp.x = x; stamp.y = y;
+}
+
+let resizing = null;
+
+function resizeStart(event, stamp, direction) {
+  event.preventDefault();
+  event.stopPropagation();
+  resizing = { stamp, direction, startX: event.clientX, startY: event.clientY, startWidth: stamp.width, startHeight: stamp.height, startXOffset: stamp.x, startYOffset: stamp.y };
+  
+  document.addEventListener('mousemove', resizeMove);
+  document.addEventListener('mouseup', resizeEnd);
+}
+
+function resizeMove(event) {
+  if (!resizing) return;
+  
+  const { stamp, direction, startX, startY, startWidth, startHeight, startXOffset, startYOffset } = resizing;
+  const dx = event.clientX - startX;
+  const dy = event.clientY - startY;
+  if (direction.includes('right')) stamp.width = Math.max(startWidth + dx, 10);
+  if (direction.includes('bottom')) stamp.height = Math.max(startHeight + dy, 10);
+  if (direction.includes('left')) {
+    stamp.width = Math.max(startWidth - dx, 10);
+    stamp.x = Math.min(startXOffset + dx, startXOffset + startWidth - 10); 
+  }
+  if (direction.includes('top')) {
+    stamp.height = Math.max(startHeight - dy, 10);
+    stamp.y = Math.min(startYOffset + dy, startYOffset + startHeight - 10);
+  }
+}
+
+function resizeEnd() {
+  resizing = null;
+  document.removeEventListener('mousemove', resizeMove);
+  document.removeEventListener('mouseup', resizeEnd);
 }
 </script>
 
@@ -161,16 +218,20 @@ export default {
           <div class="p-0" style="position: relative; background-color: gray;">
             <VuePDF :pdf="pdf" :page="page" @loaded="handleFileSize" fit-parent
               watermark-text="Preview: document is not signed yet!" :watermark-options="watermarkOptions" />
-            <div v-for="stamp in stamps.filter(stamp => stamp.page === page && stamp.file === currentFile)">
+            <div v-for="stamp in stamps.filter(stamp => stamp.page === page && stamp.file === currentFile)" :key="stamp.id">
               <div class="stamp"
                 :style="{ width: `${stamp.width}px`, height: `${stamp.height}px`, left: `${stamp.x}px`, top: `${stamp.y}px`, position: 'absolute' }"
-                draggable="true" @drag="dragStamp($event, stamp)">
+                draggable="true" @dragstart="dragStampStart($event, stamp)" @dragend="dragStampEnd($event, stamp)" @dragover="dragStampOver($event)">
                 <div class="stamp-content">
                   <span class="stamp-text text-danger">
                     Signed by {{ user.profile.fullName }}
                     <br> at YYYY/MM/DD HH:MM:SS
                   </span>
                 </div>
+                <div class="resize-handle top-left" @mousedown="resizeStart($event, stamp, 'top-left')"></div>
+                <div class="resize-handle top-right" @mousedown="resizeStart($event, stamp, 'top-right')"></div>
+                <div class="resize-handle bottom-left" @mousedown="resizeStart($event, stamp, 'bottom-left')"></div>
+                <div class="resize-handle bottom-right" @mousedown="resizeStart($event, stamp, 'bottom-right')"></div>
               </div>
             </div>
           </div>
@@ -324,36 +385,8 @@ export default {
             </div>
           </div>
         </div>
-
-        <!-- <div class="card" v-if="fileSigned">
-          <div class="card-header">
-            <h5 class="card-title float-start">Signed document</h5>
-            <button type="button" class="btn-close float-end" aria-label="Close" @click="fileSigned = false"></button>
-          </div>
-          <div class="card-body">
-            <p class="text-center fw-bold">Your document is ready!</p>
-            <hr>
-            <div class="row">
-              <div class="col border-end">
-                <p class="text-center">Send it to an email</p>
-                <div class="input-group mb-3">
-                  <input type="email" class="form-control" placeholder="Email" v-model="email">
-                  <button class="btn btn-success" @click="sendToEmail">Send</button>
-                </div>
-              </div>
-              <div class="col">
-                <p class="text-center">Download the document</p>
-                <button class="btn btn-primary w-100" @click="downloadIt">Download</button>
-              </div>
-            </div>
-          </div>
-        </div> -->
-        
       </div>
     </div>
-    <!-- <div v-if="!fileSigned" style="position: static; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;">
-      <button class="btn btn-success" @click="sendToEmail">Send to email</button>
-    </div> -->
   </div>
 </template>
 
@@ -366,4 +399,6 @@ export default {
   font-size: 10px;
   color: pink !important;
 }
+
+.resize-handle { width: 10px; height: 10px; background-color: red; position: absolute; z-index: 1; } .top-left { top: -5px; left: -5px; cursor: nwse-resize; } .top-right { top: -5px; right: -5px; cursor: nesw-resize; } .bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; } .bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
 </style>

@@ -1,21 +1,21 @@
-# SERVER SETTINGS
+# SERVER SETTINGS WHERE THE WEBSITE WILL BE RUN/HOSTED
 PORT = 3000
 HOST = 'localhost'
 CLIENT_PORT = 5173
 
-# MICROSOFT OAUTH DETAILS
+# MICROSOFT OAUTH DETAILS TO ALLOW SIGN-IN
 TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 CLIENT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 CLIENT_SECRET = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 
-# DATABASE DETAILS
+# DATABASE DETAILS WHERE USERS WILL BE STORED
 MONGO_URI = 'mongodb+srv://user:pass@website/?retryWrites=true&w=majority&appName=example'
 
-# DEFAULT ADMIN DETAILS
+# DEFAULT ADMIN DETAILS TO LOGIN VIA FORM
 ADMIN_EMAIL = 'admin'
 ADMIN_PASSWORD = 'password'
 
-# CERTIFICATE DETAILS
+# CERTIFICATE DETAILS FOR EVERY NEW USER AS DEFAULT CERTIFICATE
 CERT_PASS = '...long_password'
 CERT_COMMON_NAME = 'localhost'
 CERT_COUNTRY = 'Hungary'
@@ -25,7 +25,7 @@ CERT_ORGANIZATION = 'ELTE'
 CERT_ORGANIZATION_UNIT = 'Student'
 CERT_URI = 'http://localhost:3000'
 
-# EMAIL SETTINGS
+# EMAIL SETTINGS FROM WHERE THE DOCUMENTS WILL BE SENT FROM
 EMAIL_HOST = 'smtp-mail.outlook.com'
 EMAIL_PORT = 587
 EMAIL = 'email@inf.elte.hu'

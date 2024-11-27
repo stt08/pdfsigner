@@ -12,8 +12,8 @@ const config = {
 };
 
 const scopes = ["user.read"];
-const redirectUri = `http://${process.env.HOST}:${process.env.CLIENT_PORT}/api/oauth/redirect`;
 const pca = new msal.ConfidentialClientApplication(config);
+const redirectUri = process.env.REDIRECT_URI || "http://localhost:3000/api/oauth/redirect";
 
 // == == == == == == == == == == == == == == == == == == == == //
 
@@ -34,7 +34,6 @@ const acquireTokenByCode = async (code) => {
 
     try {
         const response = await pca.acquireTokenByCode(tokenRequest);
-        console.log("\nResponse: \n:", response);
         return response;
     } catch(error) {
         console.log(error);

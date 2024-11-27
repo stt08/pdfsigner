@@ -1,28 +1,21 @@
 {
-  "name": "client",
-  "version": "0.0.0",
+  "name": "client2",
+  "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test:unit": "vitest"
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
   },
   "dependencies": {
-    "@tato30/vue-pdf": "^1.9.6",
-    "axios": "^1.6.8",
-    "pdfvuer": "^2.0.1",
-    "vue": "^3.3.11",
-    "vue-pdf-embed": "^1.2.1",
-    "vue-pdf-reader": "^0.2.9",
-    "vue-router": "^4.2.5"
+    "@tato30/vue-pdf": "^1.11.2",
+    "axios": "^1.7.7",
+    "vue": "^3.2.13",
+    "vue-router": "^4.0.3",
+    "vuex": "^4.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.5.2",
-    "@vue/test-utils": "^2.4.3",
-    "jsdom": "^23.0.1",
-    "vite": "^5.0.10",
-    "vitest": "^1.0.4"
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0"
   }
 }

@@ -14,9 +14,6 @@ export default {
       showErrors: false
     };
   },
-  mounted() {
-    console.log(this.showErrors);
-  },
   methods: {
     login(e) {
       e.preventDefault();

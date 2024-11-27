@@ -4,11 +4,37 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cookieParser = require('cookie-parser');
 
-// const { getAuthUrl, acquireTokenByCode } = require('./lib/oauth');
-const { generateCertificate } = require('./lib/certificate');
-const { signPdf, signPdf2, verifyPdf } = require('./lib/pdfsigner');
+const { signPdf, verifyPdf } = require('./lib/pdfsigner');
 const Mongo = require('./lib/mongo');
 const OAuth = require('./lib/oauth');
+
+// == == == == == == == == == == == == == == == == == == == == //
+//      Checking environment variables to be set properly      //
+
+if (!process.env.TENANT_ID || !process.env.CLIENT_ID || !process.env.CLIENT_SECRET) {
+    console.error('Please set details for Microsoft OAuth in .env file');
+    process.exit(1);
+}
+
+if (!process.env.MONGO_URI) {
+    console.error('Please set MongoDB URI in .env file');
+    process.exit(1);
+}
+
+if (!process.env.CERT_PASS || !process.env.CERT_COMMON_NAME || !process.env.CERT_COUNTRY
+    || !process.env.CERT_STATE || !process.env.CERT_LOCALITY || !process.env.CERT_ORGANIZATION
+    || !process.env.CERT_ORGANIZATION_UNIT || !process.env.CERT_URI) {
+    
+    console.error('Please set certificate details in .env file');
+    process.exit(1);
+}
+
+if (!process.env.EMAIL_HOST || !process.env.EMAIL_PORT
+    || !process.env.EMAIL || !process.env.EMAIL_PASSWORD) {
+
+    console.error('Please set email details in .env file');
+    process.exit(1);
+}
 
 // == == == == == == == == == == == == == == == == == == == == //
 
@@ -16,10 +42,9 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const port = process.env.PORT || 3000;
 const app = express();
-Mongo.connect()
-
-// app.use(express.static('public'));
 app.use(cookieParser());
+
+Mongo.connect()
 
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
@@ -127,6 +152,7 @@ api.post('/users/:id', express.json(), async (req, res) => {
         res.status(401).send('Unauthorized');
         return;
     }
+
     const id = req.params.id;
     const data = req.body.data;
     const field = req.body.field;
@@ -197,7 +223,7 @@ api.post('/sign/create', upload.fields([
 
     const results = [];
     for (const pdf of pdfs) {
-        const signedPdf = await signPdf2(pdf.buffer, certificate, password, info, signatures);
+        const signedPdf = await signPdf(pdf.buffer, certificate, password, info, signatures);
         results.push({
             buffer: signedPdf,
             initialName: pdf.originalname,
@@ -284,21 +310,12 @@ api.post('/verify-pdf', upload.single('pdfFile'), async (req, res) => {
 app.use('/api', api);
 // == == == == == == == == == == == == == == == == == == == == //
 
-// if (process.env.NODE_ENV !== 'production') {
-//     app.get("*", (req, res) => {
-//         res.redirect(`http://${process.env.HOST}:${process.env.CLIENT_PORT}${req.url}`);
-//     });
-// }
-if (process.env.NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'public/index.html'));
-    });
-}
-else {
-    app.get("*", (req, res) => {
-        res.redirect(`http://${process.env.HOST}:${process.env.CLIENT_PORT}${req.url}`);
-    });
-}
+console.log("NODE_ENV: ", process.env.NODE_ENV);
 
+// static serve public folder
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.listen(port, () => console.log(`Active on port ${port}!`));

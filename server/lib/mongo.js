@@ -61,211 +61,196 @@ const Session = mongoose.model('Session', sessionSchema);
 
 // == == == == == == == == == == == == == == == == == == == == //
 
-const connect = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI, {})
-        console.log('Connected to MongoDB!');
-    } catch (e) {
-        console.error('Error connecting to MongoDB!', e);
-        process.exit(1);
-    }
-    
-    if (!(await User.findOne({ email: admin.email }))) {
-        const newAdmin = await new User(admin).save();
-        const certAdmin = await generateCertificate(newAdmin._id.toString());
-        newAdmin.certificates = [{
-            name: 'default',
-            data: certAdmin
-        }];
-        return await newAdmin.save();
-    }
-}
+module.exports = {
+    connect: async () => {
+        try {
+            await mongoose.connect(process.env.MONGO_URI, {})
+            console.log('Connected to MongoDB!');
+        } catch (e) {
+            console.error('Error connecting to MongoDB!', e);
+            process.exit(1);
+        }
+        
+        if (!(await User.findOne({ email: admin.email }))) {
+            const newAdmin = await new User(admin).save();
+            const certAdmin = await generateCertificate(newAdmin._id.toString());
+            newAdmin.certificates = [{
+                name: 'default',
+                data: certAdmin
+            }];
+            return await newAdmin.save();
+        }
+    },
 
-const getUsers = () => {
-    return User.find().sort({ role: 1 });
-}
+    getUsers: () => {
+        return User.find().sort({ role: 1 });
+    },
 
-const getUserById = (id) => {
-    try {
-        return User.findById(id);
-    } catch (e) {
-        return null;
-    }
-}
+    getUserById: (id) => {
+        try {
+            return User.findById(id);
+        } catch (e) {
+            return null;
+        }
+    },
 
-const updateUser = async (id, field, data) => {
-    const user = await User.findById(id);
-    if (!user) {
-        return null;
-    }
+    updateUser: async (id, field, data) => {
+        const user = await User.findById(id);
+        if (!user) {
+            return null;
+        }
 
-    if(field === 'role') {
-        user.set({ role: data });
-    }
-    else if(field === 'password') {
-        user.set({ password: bcrypt.hashSync(data, 10) });
-    }
-    else if (field === 'fullName') {
-        user.set({ fullName: data });
-    }
-    else if (field === 'email') {
-        user.set({ email: data });
-    }
-    return await user.save();
-}
+        if(field === 'role') {
+            user.set({ role: data });
+        }
+        else if(field === 'password') {
+            user.set({ password: bcrypt.hashSync(data, 10) });
+        }
+        else if (field === 'fullName') {
+            user.set({ fullName: data });
+        }
+        else if (field === 'email') {
+            user.set({ email: data });
+        }
+        return await user.save();
+    },
 
-const changePasswordSelf = async (id, password, newPassword) => {
-    const user = await User.findById(id);
-    if (!user) {
-        return null;
-    }
+    changePasswordSelf: async (id, password, newPassword) => {
+        const user = await User.findById(id);
+        if (!user) {
+            return null;
+        }
 
-    if (!bcrypt.compareSync(password, user.password)) {
-        return null;
-    }
+        if (!bcrypt.compareSync(password, user.password)) {
+            return null;
+        }
 
-    user.password = bcrypt.hashSync(newPassword, 10);
-    return await user.save();
-}
+        user.password = bcrypt.hashSync(newPassword, 10);
+        return await user.save();
+    },
 
-const accessUser = async (fullName, email) => {
-    email = email.toLowerCase();
-    
-    const user = await User.findOne({ email: email });
-    if (!user) {
-        // creation of new user
+    accessUser: async (fullName, email) => {
+        email = email.toLowerCase();
+        
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            // creation of new user
+            const newUser = await new User({
+                fullName, email, role: 'user'
+            }).save();
+
+            // insert a certificate for the new user
+            const newCertificate = await generateCertificate(newUser._id.toString());
+            newUser.certificates = [{
+                name: 'default',
+                data: newCertificate
+            }];
+            return await newUser.save();
+        }
+        // update from MS OAuth
+        user.fullName = fullName;
+        return await user.save();
+    },
+
+    createSession: async (userId) => {
+        const key = new Array(
+                ...crypto.getRandomValues(new Uint8Array(32))
+            )
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('');
+        return new Session({ userId, key }).save();
+    },
+
+    createUser: async (email, fullName, password, role) => {
         const newUser = await new User({
-            fullName, email, role: 'user'
+            fullName, email, role, password: bcrypt.hashSync(password, 10)
         }).save();
 
-        // insert a certificate for the new user
-        const newCertificate = await generateCertificate(newUser._id.toString());
+        const cert = await generateCertificate(newUser._id.toString());
         newUser.certificates = [{
             name: 'default',
-            data: newCertificate
+            data: cert
         }];
         return await newUser.save();
+    },
+
+    deleteSession: async (key) => {
+        await Session.deleteOne({ key });
+    },
+
+    getMe: async (key) => {
+        const session = await Session.findOne({ key });
+        if (!session) {
+            return null;
+        }
+
+        const user = await User.findById(session.userId);
+        if (!user) {
+            return null;
+        }
+        
+        hasPassword = user.password ? true : false;
+        certificates = user.certificates.map(certificate => certificate.name);
+        return { fullName: user.fullName, email: user.email, role: user.role, certificates, hasPassword, _id: user._id.toString() };
+    },
+
+    getUserBySession: async (key) => {
+        const session = await Session.findOne({ key });
+        if (!session) {
+            return null;
+        }
+
+        return await User.findById(session.userId);
+    },
+
+    loginWithPassword: async (email, password) => {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return null;
+        }
+
+        if (!user.password) {
+            return null;
+        }
+
+        if (!bcrypt.compareSync(password, user.password)) {
+            return null;
+        }
+
+        return user;
+    },
+
+    addCertificate: async (userId, certificateName, certificateData) => {
+        const user = await User.findById(userId);
+        if (!user) {
+            return null;
+        }
+
+        user.certificates.push({ name: certificateName, data: certificateData });
+        return await user.save();
+    },
+
+    removeCertificate: async (userId, certificateIndex, certificateName) => {
+        const user = await User.findById(userId);
+        if (!user) {
+            return null;
+        }
+
+        const certificate = user.certificates[certificateIndex];
+        if (!certificate || certificate.name !== certificateName) {
+            return null;
+        }
+
+        user.certificates.splice(certificateIndex, 1);
+        return await user.save();
+    },
+
+    deleteUser: async (userId) => {
+        const user = await User.findById(userId);
+        if (!user) {
+            return null;
+        }
+
+        return await user.deleteOne();
     }
-    // update from MS OAuth
-    user.fullName = fullName;
-    return await user.save();
-};
-
-const createSession = async (userId) => {
-    const key = new Array(
-            ...crypto.getRandomValues(new Uint8Array(32))
-        )
-        .map(x => x.toString(16).padStart(2, '0'))
-        .join('');
-    return new Session({ userId, key }).save();
-};
-
-const createUser = async (email, fullName, password, role) => {
-    const newUser = await new User({
-        fullName, email, role, password: bcrypt.hashSync(password, 10)
-    }).save();
-
-    const cert = await generateCertificate(newUser._id.toString());
-    newUser.certificates = [{
-        name: 'default',
-        data: cert
-    }];
-    return await newUser.save();
 }
-
-const deleteSession = async (key) => {
-    await Session.deleteOne({ key });
-};
-
-const getMe = async (key) => {
-    const session = await Session.findOne({ key });
-    if (!session) {
-        return null;
-    }
-
-    const user = await User.findById(session.userId);
-    if (!user) {
-        return null;
-    }
-    
-    hasPassword = user.password ? true : false;
-    certificates = user.certificates.map(certificate => certificate.name);
-    return { fullName: user.fullName, email: user.email, role: user.role, certificates, hasPassword, _id: user._id.toString() };
-};
-
-const getUserBySession = async (key) => {
-    const session = await Session.findOne({ key });
-    if (!session) {
-        return null;
-    }
-
-    return await User.findById(session.userId);
-}
-
-const loginWithPassword = async (email, password) => {
-    const user = await User.findOne({ email });
-    if (!user) {
-        return null;
-    }
-
-    if (!user.password) {
-        return null;
-    }
-
-    if (!bcrypt.compareSync(password, user.password)) {
-        return null;
-    }
-
-    return user;
-}
-
-const addCertificate = async (userId, certificateName, certificateData) => {
-    const user = await User.findById(userId);
-    if (!user) {
-        return null;
-    }
-
-    user.certificates.push({ name: certificateName, data: certificateData });
-    return await user.save();
-}
-
-const removeCertificate = async (userId, certificateIndex, certificateName) => {
-    const user = await User.findById(userId);
-    if (!user) {
-        return null;
-    }
-
-    const certificate = user.certificates[certificateIndex];
-    if (!certificate || certificate.name !== certificateName) {
-        return null;
-    }
-
-    user.certificates.splice(certificateIndex, 1);
-    return await user.save();
-}
-
-const deleteUser = async (userId) => {
-    const user = await User.findById(userId);
-    if (!user) {
-        return null;
-    }
-
-    return await user.deleteOne();
-}
-
-module.exports = {
-    connect,
-    getUsers,
-    getUserById,
-    accessUser,
-    createUser,
-    createSession,
-    loginWithPassword,
-    deleteSession,
-    getMe,
-    getUserBySession,
-    addCertificate,
-    removeCertificate,
-    updateUser,
-    deleteUser,
-};

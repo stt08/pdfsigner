@@ -30,7 +30,6 @@ export default class SignService {
 
     static async send(pdfs, email) {
         const formData = new FormData();
-        console.log(pdfs);
 
         [...pdfs].forEach(pdf => {
             const blob = new Blob([new Uint8Array(pdf.buffer.data)], { type: 'application/pdf' });

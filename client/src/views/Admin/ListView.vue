@@ -20,7 +20,6 @@ export default {
     }
 
     this.users = await UserService.getUsers();
-    console.log(this.users);
   },
   methods: {
     async addCertificate(event) {
