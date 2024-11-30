@@ -32,12 +32,19 @@ export default {
   },
   methods: {
     async update(field, data) {
+      if (data === '') {
+        return;
+      }
       if (this.locked) {
         return;
       }
       UserService.updateUser( this.$route.params.id, field, data );
       this.selectedUser.fullName = this.inputs.fullName;
       this.selectedUser.email = this.inputs.email;
+      if (field === 'password') {
+        // remove 'click to save changes' message
+        this.inputs.password = '';
+      }
     },
     async removeProfile() {
       await UserService.deleteUser( this.$route.params.id );
@@ -87,7 +94,7 @@ export default {
           <label for="email" class="form-label">Email / Username</label>
           <div class="input-group mb-3">
             <input type="text" class="form-control" id="email" v-model="inputs.email" :disabled="locked">
-            <button class="btn btn-outline-success" type="button" v-if="!locked">
+            <button class="btn btn-outline-success" type="button" v-if="!locked" @click="update('email', inputs.email)">
               <i class="fa fa-fw fa-save"></i>
             </button>
           </div>
@@ -99,7 +106,7 @@ export default {
           <label for="password" class="form-label">New password</label>
           <div class="input-group mb-3">
             <input type="password" class="form-control" id="password" v-model="inputs.password">
-            <button class="btn btn-outline-success" type="button">
+            <button class="btn btn-outline-success" type="button" @click="update('password', inputs.password)">
               <i class="fa fa-fw fa-save"></i>
             </button>
           </div>
@@ -109,11 +116,16 @@ export default {
         </div>
         <div class="mb-3">
           <label for="role" class="form-label">Role</label>
-          <select class="form-select" id="role">
-            <option v-for="role in ['admin', 'user']" :value="role" :selected="role === selectedUser.role">
-              {{ role }}
-            </option>
-          </select>
+          <div class="input-group mb-3">
+            <select class="form-select" id="role">
+              <option v-for="role in ['admin', 'user']" :value="role" :selected="role === selectedUser.role">
+                {{ role }}
+              </option>
+            </select>
+            <button class="btn btn-outline-success" type="button" @click="update('role', document.getElementById('role').value)">
+              <i class="fa fa-fw fa-save"></i>
+            </button>
+          </div>
         </div>
         <hr class="w-75 mx-auto">
       </form>
